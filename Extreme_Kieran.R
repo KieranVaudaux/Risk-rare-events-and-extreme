@@ -72,31 +72,79 @@ ZZ_365_Oil <- diff(data[364:length(data[,1]),]$Oil,differences = 2)
 
 ## Non-stationarity fit for the Oil 
 
-fit_30_Oil <- gpd.fit(X_30$Oil[2:length(X_30$Oil)],th_30$Oil[2:length(X_30$Oil)],npy = 252,
-                      ydat = as.matrix(scale(cbind(X_30$Oil[1:length(X_30$Oil)-1],th_30$Oil[1:length(X_30$Oil)-1],
-                                                   Z_30_Oil[1:length(X_30$Oil)-1],ZZ_30_Oil[1:length(X_30$Oil)-1]))), 
-                      sigl = c(1,2,3),siglink = exp)
-fit_90_Oil <- gpd.fit(X_90$Oil[2:length(X_90$Oil)],th_90$Oil[2:length(X_90$Oil)],npy = 252, 
-                      ydat = as.matrix(scale(cbind(X_90$Oil[1:length(X_90$Oil)-1],th_90$Oil[1:length(X_90$Oil)-1],
-                                                   Z_90_Oil[1:length(X_90$Oil)-1],ZZ_90_Oil[1:length(X_90$Oil)-1]))), 
-                      sigl = c(1,2,3),siglink = exp)
-fit_180_Oil <- gpd.fit(X_180$Oil[2:length(X_180$Oil)],th_180$Oil[2:length(X_180$Oil)],npy = 252, 
-                       ydat = as.matrix(scale(cbind(X_180$Oil[1:length(X_180$Oil)-1],th_180$Oil[1:length(X_180$Oil)-1],
-                                                    Z_180_Oil[1:length(X_180$Oil)-1],ZZ_180_Oil[1:length(X_180$Oil)-1]))), 
-                       sigl = c(1,2,3),siglink = exp)
-fit_365_Oil <- gpd.fit(X_365$Oil[2:length(X_365$Oil)],th_365$Oil[2:length(X_365$Oil)],npy = 252, 
-                       ydat = as.matrix(scale(cbind(X_365$Oil[1:length(X_365$Oil)-1],th_365$Oil[1:length(X_365$Oil)-1],
-                                                    Z_365_Oil[1:length(X_365$Oil)-1],ZZ_365_Oil[1:length(X_365$Oil)-1]))), 
-                       sigl = c(1,2,3),siglink = exp)
+model_list <- list(c(),1,2,3,c(1,2),c(1,3),c(2,3),c(1,2,3))
+model_name <- list("stationary","1","2","3","1-2","1-3","2-3","1-2-3")
+model_selection_30 <- data.frame(row.names = model_name)
+model_selection_90 <- data.frame(row.names = model_name)
+model_selection_180 <- data.frame(row.names = model_name)
+model_selection_365<- data.frame(row.names = model_name)
 
-gpd.diag(fit_30_Oil)
-gpd.diag(fit_90_Oil)
-gpd.diag(fit_180_Oil)
-gpd.diag(fit_365_Oil)
+fit_30_Oil_list <- list()
+fit_90_Oil_list <- list()
+fit_180_Oil_list <- list()
+fit_365_Oil_list <- list()
 
-sigma = exp(fit_90_Oil$mle[1] + fit_90_Oil$mle[2]*X_90$Oil[1:length(X_90$Oil)-1] + fit_90_Oil$mle[3]*th_90$Oil[1:length(X_90$Oil)-1])
-Y_90_Oil <- Y_90$Oil[2:length(Y_90$Oil)]/sigma
-sigma
+for(i in 1:8){
+  fit_30_Oil <- gpd.fit(X_30$Oil[2:length(X_30$Oil)],th_30$Oil[2:length(X_30$Oil)],npy = 252,
+                        ydat = as.matrix(scale(cbind(X_30$Oil[1:length(X_30$Oil)-1],th_30$Oil[1:length(X_30$Oil)-1],
+                                                     Z_30_Oil[1:length(X_30$Oil)-1],ZZ_30_Oil[1:length(X_30$Oil)-1]))), 
+                        sigl = model_list[[i]],siglink = exp)
+  model_selection_30[model_name[[i]],"nllh"] <- fit_30_Oil$nllh[[1]]
+  model_selection_30[model_name[[i]],"shape"] <- fit_30_Oil$mle[length(fit_30_Oil$mle)]
+  model_selection_30[model_name[[i]],"shape_standard_error"] <- fit_30_Oil$se[length(fit_30_Oil$se)]
+  append(fit_30_Oil_list,fit_30_Oil)
+  
+  fit_90_Oil <- gpd.fit(X_90$Oil[2:length(X_90$Oil)],th_90$Oil[2:length(X_90$Oil)],npy = 252, 
+                        ydat = as.matrix(scale(cbind(X_90$Oil[1:length(X_90$Oil)-1],th_90$Oil[1:length(X_90$Oil)-1],
+                                                     Z_90_Oil[1:length(X_90$Oil)-1],ZZ_90_Oil[1:length(X_90$Oil)-1]))), 
+                        sigl = model_list[[i]],siglink = exp)
+  model_selection_90[model_name[[i]],"nllh"] <- fit_90_Oil$nllh
+  model_selection_90[model_name[[i]],"shape"] <- fit_90_Oil$mle[length(fit_90_Oil$mle)]
+  model_selection_90[model_name[[i]],"shape_standard_error"] <- fit_90_Oil$se[length(fit_90_Oil$se)]
+  append(fit_90_Oil_list,fit_90_Oil)
+  
+  fit_180_Oil <- gpd.fit(X_180$Oil[2:length(X_180$Oil)],th_180$Oil[2:length(X_180$Oil)],npy = 252, 
+                         ydat = as.matrix(scale(cbind(X_180$Oil[1:length(X_180$Oil)-1],th_180$Oil[1:length(X_180$Oil)-1],
+                                                      Z_180_Oil[1:length(X_180$Oil)-1],ZZ_180_Oil[1:length(X_180$Oil)-1]))), 
+                         sigl = model_list[[i]],siglink = exp)
+  model_selection_180[model_name[[i]],"nllh"] <- fit_180_Oil$nllh
+  model_selection_180[model_name[[i]],"shape"] <- fit_180_Oil$mle[length(fit_180_Oil$mle)]
+  model_selection_180[model_name[[i]],"shape_standard_error"] <- fit_180_Oil$se[length(fit_180_Oil$se)]
+  append(fit_180_Oil_list,fit_180_Oil)
+  
+  fit_365_Oil <- gpd.fit(X_365$Oil[2:length(X_365$Oil)],th_365$Oil[2:length(X_365$Oil)],npy = 252, 
+                         ydat = as.matrix(scale(cbind(X_365$Oil[1:length(X_365$Oil)-1],th_365$Oil[1:length(X_365$Oil)-1],
+                                                      Z_365_Oil[1:length(X_365$Oil)-1],ZZ_365_Oil[1:length(X_365$Oil)-1]))), 
+                         sigl = model_list[[i]],siglink = exp)
+  model_selection_365[model_name[[i]],"nllh"] <- fit_365_Oil$nllh
+  model_selection_365[model_name[[i]],"shape"] <- fit_365_Oil$mle[length(fit_365_Oil$mle)]
+  model_selection_365[model_name[[i]],"shape_standard_error"] <- fit_365_Oil$se[length(fit_365_Oil$se)]
+  append(fit_365_Oil_list,fit_365_Oil)
+  
+  png(file = paste("Figures/POT_Oil/fit_30_0",i,".png"), width = 1200, height = 500)
+  par(mfrow=c(1,2))
+  gpd.diag(fit_30_Oil)
+  dev.off()
+  
+  png(file = paste("Figures/POT_Oil/fit_90_0",i,".png"), width = 1200, height = 500)
+  par(mfrow=c(1,2))
+  gpd.diag(fit_90_Oil)
+  dev.off()
+  
+  png(file = paste("Figures/POT_Oil/fit_180_0",i,".png"), width = 1200, height = 500)
+  par(mfrow=c(1,2))
+  gpd.diag(fit_180_Oil)
+  dev.off()
+  
+  png(file = paste("Figures/POT_Oil/fit_365_0",i,".png"), width = 1200, height = 500)
+  par(mfrow=c(1,2))
+  gpd.diag(fit_365_Oil)
+  dev.off()
+}
 
+nb_param <- c(0,1,1,1,2,2,2,3)
+model_selection_30["AIC"] <- 2*nb_param + 2*model_selection_30$nllh
+model_selection_90["AIC"] <- 2*nb_param + 2*model_selection_90$nllh
+model_selection_180["AIC"] <- 2*nb_param + 2*model_selection_180$nllh
+model_selection_365["AIC"] <- 2*nb_param + 2*model_selection_365$nllh
 
-fpot(Y_90_Oil,0)
