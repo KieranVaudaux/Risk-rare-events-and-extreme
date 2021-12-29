@@ -16,6 +16,32 @@ date2021 <- as.Date(rownames(Project2021),"%Y%m%d")
 
 data <- - select(Project2021,Oil,Autos)
 
+## Naïve approach Oil dataset
+
+qu.min <- quantile(data$Oil, 0.5)
+qu.max <- quantile(data$Oil,(length(data$Oil)-30)/length(data$Oil))
+mrlplot(data$Oil,c(qu.min, qu.max))
+par(mfrow=c(1,2))
+tcplot(data$Oil,c(qu.min, qu.max))
+
+th <- 2.5
+
+fit_Oil <- fpot(data$Oil,2.5,np=252)
+par(mfrow=c(1,1))
+plot(fit_Oil)
+
+par(mfrow=c(1,2))
+plot(profile(fit_Oil))
+
+fit2<-gpd.fit(data$Oil,threshold=2.5, npy=252)
+gpd.diag(fit2)
+
+par(mfrow=c(1,1))
+gpd.prof(z=fit2,m=100,xlow=12,xup=30,npy=252,conf = 0.95)
+
+rl100 <- th + fit_Oil$est[[1]]/fit_Oil$est[[2]]*((252*fit_Oil$pat)^fit_Oil$est[[2]]-1)
+rl100
+
 ## Rolling time window 
 
 rolling_threshold <- function(quant, l, dt){
@@ -34,7 +60,13 @@ th_30 <- rolling_threshold(qu,30,data)
 th_90 <- rolling_threshold(qu,90,data)
 th_180 <- rolling_threshold(qu,180,data)
 th_365 <- rolling_threshold(qu,365,data)
-plot(th_180$Oil)
+
+exi(X_30$Oil,th_30$Oil,4)
+XX <- data.frame(row.names = rownames(X_30))
+XX["obs"] <- X_30$Oil
+XX["time"] <- rownames(XX)
+exiplot(XX,c(2,5),r=2)
+
 ## Exceedances and Exceedances times
 
 X_30 <- data[31:length(data[,1]),]
@@ -147,4 +179,16 @@ model_selection_30["AIC"] <- 2*nb_param + 2*model_selection_30$nllh
 model_selection_90["AIC"] <- 2*nb_param + 2*model_selection_90$nllh
 model_selection_180["AIC"] <- 2*nb_param + 2*model_selection_180$nllh
 model_selection_365["AIC"] <- 2*nb_param + 2*model_selection_365$nllh
+
+fit_90_Oil <- gpd.fit(X_90$Oil[2:length(X_90$Oil)],th_90$Oil[2:length(X_90$Oil)],npy = 252,
+                      ydat = as.matrix(scale(cbind(X_90$Oil[1:length(X_90$Oil)-1],th_90$Oil[1:length(X_90$Oil)-1],
+                                                   Z_90_Oil[1:length(X_90$Oil)-1],ZZ_90_Oil[1:length(X_90$Oil)-1]))), 
+                      sigl = c(1,2,3),siglink = exp)
+sigma <- exp(fit_90_Oil$mle[1] + fit_90_Oil$mle[2]*X_90$Oil[1:length(X_90$Oil)-1]  + fit_90_Oil$mle[3]*th_90$Oil[1:length(X_90$Oil)-1]
+             + fit_90_Oil$mle[4]*Z_90_Oil[1:length(X_90$Oil)-1])
+YY <- Y_90$Oil[2:length(X_90$Oil)]/sigma
+
+fpot(YY,threshold = 0,npp = 252,scale = 1)
+model_selection_90
+              
 
